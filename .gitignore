@@ -1,2 +1,3 @@
 keycloak/data/
+postgres/data/*
 realm-export.json
