@@ -13,6 +13,8 @@ services:
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
     volumes:
       - ./keycloak/data:/opt/keycloak/data
+    depends_on:
+      - postgres
     command: start-dev --import-realm
   
   postgres:

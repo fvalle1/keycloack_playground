@@ -9,6 +9,8 @@ import base64
 KEYCLOAK_BASE_URL = "http://localhost:8080"
 REALM = "filippo"
 CLIENT_ID = "python"
+AUDIENCE = "pythonscript"  # optional, used for at_hash verification
+SCOPE = "openid debug"  # optional, used for at_hash verification
 CLIENT_SECRET = "rf4Qv7vr5NZ5YJpVxxC58Dfh3v72qMRe"  # optional if public client
 REDIRECT_URI = "http://localhost:8081/callback"
 USERNAME = "fvalle"
@@ -65,9 +67,9 @@ def verify_token(token_response):
     data = jwt.decode_complete(
         id_token,
         key=signing_key,
-        audience=CLIENT_ID,
-        algorithms=signing_algos
-        
+        audience=AUDIENCE,
+        algorithms=signing_algos,
+        options={"verify_signature": True, "verify_aud": True}
         )
     payload, header = data["payload"], data["header"]
 
@@ -139,7 +141,7 @@ def standard_flow():
     params = {
         "client_id": CLIENT_ID,
         "response_type": "code",
-        "scope": "openid",
+        "scope": SCOPE,
         "redirect_uri": REDIRECT_URI,
     }
     url = f"{auth_url}?{urllib.parse.urlencode(params)}"
