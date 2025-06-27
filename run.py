@@ -7,6 +7,7 @@ import base64
 
 # CONFIGURATION
 KEYCLOAK_BASE_URL = "http://localhost:8080"
+KEYCLOAK_BASE_URL = "https://auth.fvalle.online"
 REALM = "filippo"
 CLIENT_ID = "python"
 AUDIENCE = "pythonscript"  # optional, used for at_hash verification
@@ -16,17 +17,18 @@ REDIRECT_URI = "http://localhost:8081/callback"
 USERNAME = "fvalle"
 PASSWORD = "fvalle"
 
+
 def introspect_token(access_token):
-    introspect_url = f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/token/introspect"
-    
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
+    introspect_url = (
+        f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/token/introspect"
+    )
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     data = {
         "token": access_token,
         "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET
+        "client_secret": CLIENT_SECRET,
     }
 
     response = requests.post(introspect_url, headers=headers, data=data)
@@ -54,7 +56,6 @@ def verify_token(token_response):
     # setup a PyJWKClient to get the appropriate signing key
     jwks_client = jwt.PyJWKClient(oidc_config["jwks_uri"])
 
-
     # data from the login flow
     # see: https://openid.net/specs/openid-connect-core-1_0.html#TokenResponse
     id_token = token_response["id_token"]
@@ -69,8 +70,8 @@ def verify_token(token_response):
         key=signing_key,
         audience=AUDIENCE,
         algorithms=signing_algos,
-        options={"verify_signature": True, "verify_aud": True}
-        )
+        options={"verify_signature": True, "verify_aud": True},
+    )
     payload, header = data["payload"], data["header"]
 
     # get the pyjwt algorithm object
@@ -78,39 +79,46 @@ def verify_token(token_response):
 
     # compute at_hash, then validate / assert
     digest = alg_obj.compute_hash_digest(access_token.encode("utf-8"))
-    at_hash = base64.urlsafe_b64encode(digest[: (len(digest) // 2)]).decode('utf-8').rstrip('=')
+    at_hash = (
+        base64.urlsafe_b64encode(digest[: (len(digest) // 2)])
+        .decode("utf-8")
+        .rstrip("=")
+    )
     assert at_hash == payload["at_hash"]
+
 
 def login_with_password_grant():
     token_url = f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/token"
-    
+
     data = {
-        'grant_type': 'acces',
-        'client_id': CLIENT_ID,
-        'username': USERNAME,
-        'password': PASSWORD,
+        "grant_type": "acces",
+        "client_id": CLIENT_ID,
+        "username": USERNAME,
+        "password": PASSWORD,
     }
 
     # Only include client_secret if the client is confidential
     if CLIENT_SECRET:
-        data['client_secret'] = CLIENT_SECRET
+        data["client_secret"] = CLIENT_SECRET
 
     response = requests.post(token_url, data=data)
 
     if response.status_code == 200:
         tokens = response.json()
         print("[+] Access token acquired:")
-        print(tokens['access_token'])
+        print(tokens["access_token"])
         return tokens
     else:
         print("[-] Login failed:")
         print(response.status_code, response.text)
         return None
 
+
 class OAuthHTTPServer(HTTPServer):
     def __init__(self, server_address, RequestHandlerClass):
         super().__init__(server_address, RequestHandlerClass)
         self.auth_code = None
+
 
 # Local HTTP handler to capture the code
 class OAuthCallbackHandler(BaseHTTPRequestHandler):
@@ -128,10 +136,12 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         return  # Suppress logging
 
+
 def start_local_server():
     server = OAuthHTTPServer(("localhost", 8081), OAuthCallbackHandler)
     server.handle_request()  # waits for exactly one request
     return server.auth_code
+
 
 def standard_flow():
     auth_url = f"{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/auth"
@@ -178,6 +188,7 @@ def standard_flow():
         print("[-] Token exchange failed:")
         print(response.status_code, response.text)
         return None
+
 
 if __name__ == "__main__":
     # token = login_with_password_grant()
