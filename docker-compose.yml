@@ -8,6 +8,7 @@ services:
       - KC_HOSTNAME_STRICT_HTTPS='true'
       - KC_TLS_HOSTNAME_VERIFIER=ANY
       - KC_HTTP_ENABLED=true
+      - KC_PROXY_HEADERS=xforwarded
       - KC_BOOTSTRAP_ADMIN_USERNAME=admin 
       - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
       - KC_DB=postgres
